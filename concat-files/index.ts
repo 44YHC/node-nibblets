@@ -1,21 +1,24 @@
 import { readFile, writeFile } from "fs";
 
-function concat(...args: [(e: Error | null) => void, string, ...string[]]) {
-  const [cb, dest, ...files] = args;
+function concat(
+  callback: (e: Error | null) => void,
+  destination: string,
+  ...files: string[]
+) {
   let output = "";
   function iterate(index: number) {
     if (index === files.length) {
-      return writeFile(dest, output, (err) => {
+      return writeFile(destination, output, (err) => {
         if (err) {
-          return cb(err);
+          return callback(err);
         }
-        return cb(null);
+        return callback(null);
       });
     }
     const filepath = files[index];
     readFile(filepath, "utf8", (err, data) => {
       if (err) {
-        return cb(err);
+        return callback(err);
       }
       output += data;
       return iterate(index + 1);
