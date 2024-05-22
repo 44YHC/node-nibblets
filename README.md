@@ -1,4 +1,4 @@
-# node-nibblets / WIP
+# node-nibblets
 
 This is a collection of small typescript apps, each focusing on different core node and javascript features, node's native libraries, the asynchronous nature of node's reactor pattern driving the event loop, as well as various control flow patterns applied to common problems in software development, as outlined in the brilliant "NodeJS Design Patterns" book.
 
@@ -53,7 +53,7 @@ This is a recursive callback passing style implementation with additional concur
 The code is quite cumbersome, so I'll try to outline the execution flow, individual function outputs and notable patterns below.
 
 >I'd like to note here that purposely limiting yourself to callback style APIs, especially with recursion, makes the code needlessly complicated, unreadable, error prone, and serves only as a proof of concept exercise to demonstrate asynchronous control flow patterns   using only legacy APIs.
->Having written this not so long ago, even now I find the mind-bending patterns necessary to make each crawler version work overwhelming.(See the queue structure from the next version.) 
+>Having written this not so long ago, even now I find the mind-bending patterns necessary to make each crawler version work overwhelming.
 >I'd also like to note that a large portion of this app's code is lifted from the book, but with plenty enough of my own input and optimizations, to make it what a cynic might call "legally distinct". In any case, I'd gladly discuss the implementation on a call.
 
 First, the utility functions:
@@ -97,6 +97,68 @@ The other difference is the slightly different `Queue` `next` and `push` methods
 
 On the other hand, the esoteric part of this implementation is the new `push` method. To understand its logic we need to look at the `crawlLinks` function, which returns `Promise.all` for all `crawl` calls over the page's links. Notice how the starting from the initial `crawl` with each iteration the original function call becomes a big chain of promises, which eventually resolves once the queue is empty. To achieve this, the `push` method returns a promise that only resolves once the pushed task completes by passing its own `resolve` and `reject` methods to `then` call on a task promise.
 
-This part took way longer to write than I originally expected and makes me doubt if my time could have been better spent writing some microservice. Still, I do hope that I at least partially succeeded in making this mess make some sense and just maybe provided a little entertainment.
+_____
+## csv-stream
+
+Uses `csv-parser` and a combination of custom late-piped `PassThrough` streams to parse and filter data.
+
+`ReportsByYear` and `ReportsByBorough` extend `PassThrough` with `objectMode` set to `true` in the constructor. 
+
+Every chunk is then aggregated and the final result is logged.
 
 _____
+
+## fib-iterator-generator
+
+Showcases functional, class, async iterators and generators.
+
+_____
+## observable-find-regex
+
+The `FindRegex` class accepts a `RegExp` as the argument and provides an `addFile` method, and a `find` method that searches the provided files' contents for the given regex.
+
+Observability is introduced by extending the `EventEmitter` class.
+
+_____
+## parallel-map-with-concurrency
+
+Used to apply async logic tp the provided iterable with limited concurrency.
+
+Accepts an `iterable`, a `mapper` function that returns a promise and the `concurrency` limit.
+
+Inside the returned promise, an `output` and an `errors` array are initialized. The `next` function and the `running` variable are used for limiting the async task concurrency.
+
+The `next` function uses a `while` loop to spool up new async tasks by applying the `mapper` function over each element in the provided `iterable`. Once every `mapper` promise is settled, the outer promise is either resolved or rejected.
+
+_____
+
+## parallel-tcp-fileshare
+
+Uses multiplexing on the client side and demultiplexing on the server side to send multiple files in parallel over a TCP socket.
+
+On the client, a socket connection and a `channels` array are initialized.
+Each `channel` is a `pipeline` of an encrypted and compressed stream of a given file. 
+
+On socket connection an initial packet consisting of the `iv` for decryption and the `files` array is sent to the server. 
+
+The `multiplex` function keeps a counter of `open` channels. For each channel, a `readable` listener is registered. The listener adds the `channel id` as the first byte of each packet sent to the server. Once the `open` counter reaches 0, the tcp connection is shut down.
+
+On the server, the `handleMeta` function is used to read the first chunk on socket connection containing the decryption `iv`, as well as the array of file names, then the applied `readable` listener is removed  and the `demultiplex` function takes over the socket. 
+
+On each subsequent chunk, the first byte is read to determine the `channel id`, and the rest is written into the appropriate `channel`. 
+
+______
+
+## promise-all
+
+An implementation of `Promise.all`.  Accepts an array of promises and returns a promise that eventually either resolves with the result of each individual promise, or rejects with the first rejected promise. 
+
+_____
+
+## recursive-find-in-file 
+
+The `recursiveFind` function uses callback-passing style APIs to sequentially read files from the provided array and returns an array of files containing a given `keyword`.
+
+The `iterate` function sequentially reads files and recursively calls itself until eventually the initial callback is called with the output array.
+
+
